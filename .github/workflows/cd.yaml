@@ -1,0 +1,43 @@
+name: CD Pipeline
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [user-service, product-service, order-service]
+      
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Get Git commit SHA
+      id: git
+      run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+    - name: Configure kubectl
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+        chmod 600 $HOME/.kube/config
+
+    - name: Update deployment image
+      run: |
+        kubectl set image deployment/${{ matrix.service }} \
+        ${{ matrix.service }}=${{ secrets.DOCKER_USERNAME }}/${{ matrix.service }}:${{ steps.git.outputs.sha }} \
+        -n prod
+        kubectl rollout status deployment/${{ matrix.service }} -n prod
+
+    - name: Run health checks
+      run: |
+        for POD in $(kubectl get pods -n prod -l app=${{ matrix.service }} -o name); do
+          kubectl exec -n prod $POD -- python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health?')" || exit 1
+        done
+
+    - name: Rollback on failure
+      if: failure()
+      run: |
+        kubectl rollout undo deployment/${{ matrix.service }} -n prod
+        kubectl rollout status deployment/${{ matrix.service }} -n prod

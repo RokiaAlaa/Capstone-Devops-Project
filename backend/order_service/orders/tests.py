@@ -23,8 +23,8 @@ class TestOrderAPI:
 
         response = self.client.get('/api/orders/')
         assert response.status_code == 200
-        assert len(response.data) == 1
-
+        assert len(response.data['results']) == 1
+        
     def test_update_order_status(self):
         order = Order.objects.create(user_id=1, products=[{'product_id': 1, 'quantity': 1}], total=500)
 

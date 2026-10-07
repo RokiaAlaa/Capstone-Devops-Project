@@ -24,8 +24,8 @@ class TestProductAPI:
         )
         response = self.client.get('/api/products/')
         assert response.status_code == 200
-        assert len(response.data) == 1
-
+        assert len(response.data['results']) == 1
+        
     def test_update_product_stock(self):
         product = Product.objects.create(
             name='Tablet', description='A tablet', price=300, stock=20

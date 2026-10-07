@@ -34,7 +34,7 @@ class TestUserAPI:
         )
         response = self.client.get('/api/users/')
         assert response.status_code == 200
-        assert len(response.data) == 1
+        assert len(response.data['results']) == 1
 
     def test_update_user(self):
         user = User.objects.create_user(
