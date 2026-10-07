@@ -145,7 +145,7 @@ jobs:
         pip install pyyaml
         for file in k8s/*.yaml; do
           echo "Checking $file"
-          python -c "import yaml; list(yaml.safe.load_all(open('$file')))"
+          python -c "import sys, yaml; list(yaml.safe_load_all(open(sys.argv[1])))" "$file"
         done
 
     - name: Validate Terraform formatting
