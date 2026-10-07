@@ -1,0 +1,38 @@
+- name: Add Vault Helm repo
+  kubernetes.core.helm_repository:
+    name: hashicorp
+    repo_url: "https://helm.releases.hashicorp.com"
+    state: present
+
+- name: Install Vault
+  kubernetes.core.helm:
+    name: vault
+    chart_ref: hashicorp/vault
+    release_namespace: vault
+    create_namespace: true
+    values:
+      server:
+        dataStorage:
+          size: "{{ '2Gi' if env == 'local' else '10Gi' }}"
+        ha:
+          # enabled: "{{ false if env == 'local' else true }}"
+          enabled: "{{ (env != 'local') | bool}}"
+          replicas: "{{ 1 if env == 'local' else 3 }}"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 250m
+            memory: 512Mi
+
+- name: Wait for Vault to be ready
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: vault
+    label_selectors:
+      - app.kubernetes.io/name=vault
+  register: vault_pods
+  until: vault_pods.resources | length > 0 and vault_pods.resources[0].status.phase == 'Running'
+  retries: 30
+  delay: 10

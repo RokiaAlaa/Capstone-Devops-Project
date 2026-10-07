@@ -1,0 +1,22 @@
+- name: Setup Capstone Infrastructure
+  hosts: kubernetes
+  tasks:
+    - name: Setup Kubernetes
+      include_role:
+        name: kubernetes-setup
+
+    - name: Setup Vault
+      include_role:
+        name: vault-setup
+
+    - name: Setup ArgoCD
+      include_role:
+        name: argocd-setup
+
+    - name: Setup Monitoring
+      include_role:
+        name: monitoring-setup
+
+    - name: Setup logging (EFK)
+      include_role:
+        name: logging-setup

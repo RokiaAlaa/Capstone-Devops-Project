@@ -1,0 +1,57 @@
+- name: Add Prometheus community Helm repo
+  kubernetes.core.helm_repository:
+    name: prometheus-community
+    repo_url: "https://prometheus-community.github.io/helm-charts"
+    state: present
+
+- name: Install kube-prometheus-stack (Prometheus + Grafana + Alertmanager)
+  kubernetes.core.helm:
+    name: monitoring
+    chart_ref: prometheus-community/kube-prometheus-stack
+    release_namespace: monitoring
+    create_namespace: true
+    skip_crds: true
+    values:
+      grafana:
+        adminPassword: "admin123"
+        service:
+          type: ClusterIP
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 150m
+            memory: 256Mi
+      prometheus:
+        prometheusSpec:
+          retention: 3d
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+
+- name: Wait for Grafana pod to be ready
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: monitoring
+    label_selectors:
+      - app.kubernetes.io/name=grafana
+  register: grafana_pods
+  until: grafana_pods.resources | length > 0 and grafana_pods.resources[0].status.phase == 'Running' 
+  retries: 30
+  delay: 10
+
+- name: Wait for Prometheus pod to be ready
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: monitoring
+    label_selectors:
+      - app.kubernetes.io/name=prometheus
+  register: prometheus_pods
+  until: prometheus_pods.resources | length > 0 and prometheus_pods.resources[0].status.phase == 'Running' 
+  retries: 30
+  delay: 10

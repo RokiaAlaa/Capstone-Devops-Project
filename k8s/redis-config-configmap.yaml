@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: prod
+data:
+  url: "redis://redis-endpoint-placeholder:6379"

@@ -1,0 +1,83 @@
+- name: Add Elastic Helm repo
+  kubernetes.core.helm_repository:
+    name: elastic
+    repo_url: "https://helm.elastic.co"
+    state: present
+
+- name: Add Fluent Helm repo
+  kubernetes.core.helm_repository:
+    name: fluent
+    repo_url: "https://fluent.github.io/helm-charts"
+    state: present
+
+- name: Install Elasticsearch (single-node, minimal resources)
+  kubernetes.core.helm:
+    name: elasticsearch
+    chart_ref: elastic/elasticsearch
+    release_namespace: logging
+    create_namespace: true
+    values:
+      replicas: 1
+      minimumMasterNodes: 1
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          cpu: 300m
+          memory: 768Mi
+      volumeClaimTemplate:
+        resources:
+          requests:
+            storage: 5Gi
+      esJavaOpts: "-Xmx256m -Xms256m"
+
+- name: Wait for Elasticsearch pod to be ready
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: logging
+    label_selectors:
+      - app=elasticsearch-master
+  register: es_pods
+  until: >
+    es_pods.resources | length > 0 and
+    es_pods.resources[0].status.phase == 'Running'
+  retries: 40
+  delay: 15
+
+- name: Install Kibana
+  kubernetes.core.helm:
+    name: kibana
+    chart_ref: elastic/kibana
+    release_namespace: logging
+    create_namespace: true
+    values:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 200m
+          memory: 512Mi
+      service:
+        type: ClusterIP
+
+- name: Install Fluent Bit (log shipper, lightweight)
+  kubernetes.core.helm:
+    name: fluent-bit
+    chart_ref: fluent/fluent-bit
+    release_namespace: logging
+    create_namespace: true
+    values:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+      backend:
+        type: es
+        es:
+          host: elasticsearch-master.logging.svc.cluster.local
+          ports: 9200

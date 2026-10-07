@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+        version: v1.0.0
+    spec:
+      containers:
+      - name: product-service
+        image: rokaa666/product-service:v1.0.0
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_HOST
+          valueFrom: 
+            configMapKeyRef:
+              name: db-config
+              key: db-host
+        - name: DB_NAME
+          value: product_service_db
+        - name: DB_USER
+          valueFrom: 
+            secretKeyRef:
+              name: db-credentials
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: db-credentials
+              key: db-password
+        - name: REDIS_URL
+          valueFrom: 
+            configMapKeyRef:
+              name: redis-config
+              key: url
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        readinessProbe:
+          httpGet:
+            path: /api/products/
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/products/
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: prod
+spec:
+  selector:
+    app: product-service
+  ports:
+  - port: 8000
+    name: http
+  type: ClusterIP

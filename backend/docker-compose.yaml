@@ -1,0 +1,83 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: capstone-postgres
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-multiple-postgres-databases.sh:/docker-entrypoint-initdb.d/init-multiple-postgres-databases.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg-isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: capstone-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build: ./capstone-backend/user_service
+    container_name: user-service
+    env_file:
+      - .env
+    environment:
+      DB_NAME: ${USER_DB_NAME}
+      DB_HOST: ${USER_DB_HOST}
+      DB_PORT: ${USER_DB_PORT}
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  product-service:
+    build: ./capstone-backend/product_service
+    container_name: product-service
+    env_file:
+      - .env
+    environment:
+      DB_NAME: ${PRODUCT_DB_NAME}
+      DB_HOST: ${PRODUCT_DB_HOST}
+      DB_PORT: ${PRODUCT_DB_PORT}
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  order-service:
+    build: ./capstone-backend/order_service
+    container_name: order-service
+    env_file:
+      - .env
+    environment:
+      DB_NAME: ${ORDER_DB_NAME}
+      DB_HOST: ${ORDER_DB_HOST}
+      DB_PORT: ${ORDER_DB_PORT}
+    ports:
+      - "8003:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data

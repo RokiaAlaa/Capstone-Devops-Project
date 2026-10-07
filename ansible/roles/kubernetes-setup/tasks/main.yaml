@@ -1,0 +1,59 @@
+- name: Add ingress-nginx Helm repo
+  kubernetes.core.helm_repository:
+    name: ingress-nginx
+    repo_url: "https://kubernetes.github.io/ingress-nginx"
+    state: present
+
+- name: Install Nginx Ingress Controller
+  kubernetes.core.helm:
+    name: nginx-ingress
+    chart_ref: ingress-nginx/ingress-nginx
+    release_namespace: ingress-nginx
+    create_namespace: true
+    values:
+      controller:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+- name: Wait for Nginx Ingress controller pod to be ready
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: ingress-nginx
+    label_selectors:
+      - app.kubernetes.io/component=controller
+  register: ingress_nginx
+  until: >
+    ingress_nginx.resources is defined and
+    ingress_nginx.resources | length > 0 and
+    ingress_nginx.resources[0].status.phase == 'Running'
+  retries: 30
+  delay: 10
+
+- name: Create application namespaces
+  kubernetes.core.k8s:
+    name: "{{ item }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+  loop:
+    - dev
+    - staging
+    - prod
+    - monitoring
+    - logging
+    - vault
+    - argocd
+
+- name: Check available StorageClasses
+  kubernetes.core.k8s_info:
+    kind: StorageClass
+  register: storage_classes
+
+- name: Show default StorageClass in use
+  debug:
+    msg: "Using default StorageClass: {{ storage_classes.resources | map(attribute='metadata.name') | list }}"
