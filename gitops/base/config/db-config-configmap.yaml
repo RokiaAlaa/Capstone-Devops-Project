@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+data:
+  db-host: "rds-endpoint-placeholder.rds.amazonaws.com"

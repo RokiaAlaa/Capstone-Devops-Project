@@ -31,6 +31,9 @@
           requests:
             storage: 5Gi
       esJavaOpts: "-Xmx256m -Xms256m"
+      esConfig:
+        elasticsearch.yml: |
+          xpack.security.enabled: false
 
 - name: Wait for Elasticsearch pod to be ready
   kubernetes.core.k8s_info:
@@ -40,10 +43,12 @@
       - app=elasticsearch-master
   register: es_pods
   until: >
+    es_pods.resources is defined and
     es_pods.resources | length > 0 and
     es_pods.resources[0].status.phase == 'Running'
   retries: 40
   delay: 15
+  ignore_errors: true
 
 - name: Install Kibana
   kubernetes.core.helm:
@@ -76,8 +81,15 @@
         limits:
           cpu: 100m
           memory: 128Mi
-      backend:
-        type: es
-        es:
-          host: elasticsearch-master.logging.svc.cluster.local
-          ports: 9200
+      config:
+        outputs: |
+          [OUTPUT]
+          Name                es
+          Match               kube.*
+          Host                elasticsearch-master.logging.svc.cluster.local
+          Port                9200
+          Logstash_Format     On
+          Logstash_Prefix     logs
+          Replace_Dots        On
+          Suppress_Type_Name  On
+          Retry_Limit         False

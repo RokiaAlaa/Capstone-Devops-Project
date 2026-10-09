@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: capstone-root
+  namespace: argocd
+spec:
+  project: default
+  source: 
+    repoURL: https://github.com/RokiaAlaa/Capstone-Devops-Project.git
+    targetRevision: HEAD
+    path: gitops/overlays/prod/order-service
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

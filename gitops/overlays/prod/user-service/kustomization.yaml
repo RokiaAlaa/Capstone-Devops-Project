@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: prod
+resources:
+- ../../../base/user-service
+replicas:
+- name: user-service
+  count: 3
+images:
+- name: rokaa666/user-service
+  newTag: latest
+labels:
+- pairs:
+    environment: production
+  includeSelectors: false

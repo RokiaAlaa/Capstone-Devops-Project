@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+        version: v1.0.0
+    spec:
+      containers:
+      - name: order-service
+        image: rokaa666/order-service:v1.0.0
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_HOST
+          valueFrom: 
+            configMapKeyRef:
+              name: db-config
+              key: db-host
+        - name: DB_NAME
+          value: order_service_db
+        - name: DB_USER
+          valueFrom: 
+            secretKeyRef:
+              name: db-credentials
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom: 
+            secretKeyRef:
+              name: db-credentials
+              key: db-password
+        - name: REDIS_URL
+          valueFrom: 
+            configMapKeyRef:
+              name: redis-config
+              key: url
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        readinessProbe:
+          httpGet:
+            path: /health/
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health/
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  selector:
+    app: order-service
+  ports:
+  - port: 8000
+    name: http
+  type: ClusterIP

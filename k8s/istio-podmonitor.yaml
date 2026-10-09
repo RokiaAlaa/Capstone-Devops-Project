@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: istio-proxies
+  namespace: monitoring
+  labels: 
+    release: monitoring
+spec:
+  selector:
+    matchExpressions:
+    - {key: istio-prometheus-ignore, operator: DoesNotExist}
+    namespaceSelector:
+      matchNames: [prod]
+    podMetricsEndpoints:
+    - path: /stats/prometheus
+      port: http-envoy-prom
