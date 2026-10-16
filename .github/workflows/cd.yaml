@@ -41,3 +41,12 @@ jobs:
       run: |
         kubectl rollout undo deployment/${{ matrix.service }} -n prod
         kubectl rollout status deployment/${{ matrix.service }} -n prod
+
+    - name: Notify Slack
+      if: always()
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+      run: |
+        curl -X POST -H 'Content-type: application/json'
+        --data "{\"text\":\"CD Pipeline for ${{ matrix.service }}: ${{ job.status }}\"}" \
+        "$SLACK_WEBHOOK"

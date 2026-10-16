@@ -41,6 +41,11 @@ spec:
             configMapKeyRef:
               name: redis-config
               key: url
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: django-secret
+              key: secret-key
         resources:
           requests:
             cpu: 250m

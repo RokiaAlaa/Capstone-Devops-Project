@@ -13,7 +13,7 @@
     values:
       server:
         service:
-          type: "{{ 'NodePort' if env == 'local' else 'LoadBalancer' }}"
+          type: "{{ argocd_service_type }}"
         resources:
           requests:
             cpu: 100m

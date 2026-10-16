@@ -19,11 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "SECRET_KEY",
-    "django-insecure-)4u$%9eg2kh2&qj!s9poz9+a1)e33qktx^-k3x=h9d0w#w*+7d",
-)
+SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False") == "True"
@@ -89,6 +85,13 @@ DATABASES = {
     }
 }
 
+
+CACHES = {
+      "default": {
+          "BACKEND": "django.core.cache.backends.redis.RedisCache",
+          "LOCATION": os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
+      }
+  }
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

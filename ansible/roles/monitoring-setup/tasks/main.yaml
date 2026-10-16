@@ -1,3 +1,8 @@
+- name: Create Grafana admin ExternalSecret
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ playbook_dir }}/../../k8s/grafana-external-secret.yaml"
+
 - name: Add Prometheus community Helm repo
   kubernetes.core.helm_repository:
     name: prometheus-community
@@ -13,7 +18,10 @@
     skip_crds: true
     values:
       grafana:
-        adminPassword: "admin123"
+        admin:
+          existingSecret: grafana-admin
+          userKey: admin-user
+          passwordKey: admin-password
         service:
           type: ClusterIP
         resources:

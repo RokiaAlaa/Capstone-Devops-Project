@@ -48,7 +48,6 @@
     es_pods.resources[0].status.phase == 'Running'
   retries: 40
   delay: 15
-  ignore_errors: true
 
 - name: Install Kibana
   kubernetes.core.helm:
